@@ -11,18 +11,18 @@ class AppleMusicService:
     def __init__(self, secret_key_file, key_id, team_id, max_retries=2, session_length=12, requests_timeout=None):
         with open(secret_key_file, 'r') as f:
             self.secret_key = f.read()
-        # self.secret_key = secret_key
+
         self.key_id = key_id
         self.team_id = team_id
         self.algorithm = "ES256"
         self.session_length = session_length
         self.max_retries = max_retries
         self.url = "https://api.music.apple.com/v1"
-        self.token_string = self.generate_token(self.session_length)
+        self.token_string = self._generate_token(self.session_length)
         self.session = requests.Session()
         self.requests_timeout = requests_timeout
 
-    def generate_token(self, session_length):
+    def _generate_token(self, session_length):
         headers = {
             "alg": self.algorithm,
             "kid": self.key_id
@@ -35,7 +35,7 @@ class AppleMusicService:
         token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm, headers=headers)
         return token.decode()
 
-    def auth_headers(self):
+    def _auth_headers(self):
         """
         Get header for API request
         :return: header in dictionary format
@@ -55,7 +55,7 @@ class AppleMusicService:
         """
         if not url.startswith('http'):
             url = self.url + url
-        headers = self.auth_headers()
+        headers = self._auth_headers()
         headers['Content-Type'] = 'application/json'
 
         r = self.session.request(method, url,
@@ -66,7 +66,7 @@ class AppleMusicService:
         r.raise_for_status()  # Check for error
         return r.json()
 
-    def get(self, url, **kwargs):
+    def _get(self, url, **kwargs):
         """
         GET request from the API
         :param url: URL for API endpoint
@@ -84,7 +84,7 @@ class AppleMusicService:
                     if retries < 0:
                         raise
                     else:
-                        sleep_seconds = int(e.headers.get('Retry-After', delay))
+                        sleep_seconds = int(e.response.headers.get('Retry-After', delay))
                         print('retrying ...' + str(sleep_seconds) + ' secs')
                         time.sleep(sleep_seconds + 1)
                         delay += 1
@@ -100,17 +100,17 @@ class AppleMusicService:
                 else:
                     raise
 
-    def post(self, url, **kwargs):
+    def _post(self, url, **kwargs):
         return self._call('POST', url, kwargs)
 
-    def delete(self, url, **kwargs):
+    def _delete(self, url, **kwargs):
         return self._call('DELETE', url, kwargs)
 
-    def put(self, url, **kwargs):
+    def _put(self, url, **kwargs):
         return self._call('PUT', url, kwargs)
 
-    def getPlaylists(self):
-        data = self.get("/me/library/playlists")
+    def get_playlists(self):
+        data = self._get("/me/library/playlists")
         print(data)
 
 
@@ -122,4 +122,4 @@ if __name__ == '__main__':
         configuration["key_id"],
         configuration["team_id"]
     )
-    print(service.getPlaylists())
+    print(service.get_playlists())
