@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 
 import jwt
@@ -7,8 +8,10 @@ from requests.exceptions import HTTPError
 
 
 class AppleMusicService:
-    def __init__(self, secret_key, key_id, team_id, max_retries=2, session_length=12, requests_timeout=None):
-        self.secret_key = secret_key
+    def __init__(self, secret_key_file, key_id, team_id, max_retries=2, session_length=12, requests_timeout=None):
+        with open(secret_key_file, 'r') as f:
+            self.secret_key = f.read()
+        # self.secret_key = secret_key
         self.key_id = key_id
         self.team_id = team_id
         self.algorithm = "ES256"
@@ -56,10 +59,10 @@ class AppleMusicService:
         headers['Content-Type'] = 'application/json'
 
         r = self.session.request(method, url,
-                                  headers=headers,
-                                  proxies=[],
-                                  params=params,
-                                  timeout=self.requests_timeout)
+                                 headers=headers,
+                                 proxies=[],
+                                 params=params,
+                                 timeout=self.requests_timeout)
         r.raise_for_status()  # Check for error
         return r.json()
 
@@ -105,3 +108,18 @@ class AppleMusicService:
 
     def put(self, url, **kwargs):
         return self._call('PUT', url, kwargs)
+
+    def getPlaylists(self):
+        data = self.get("/me/library/playlists")
+        print(data)
+
+
+if __name__ == '__main__':
+    with open("config.json") as json_file:
+        configuration = json.load(json_file)
+    service = AppleMusicService(
+        configuration["secret_key_file"],
+        configuration["key_id"],
+        configuration["team_id"]
+    )
+    print(service.getPlaylists())
